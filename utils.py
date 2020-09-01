@@ -19,21 +19,21 @@ def add_special_tokens():
 
 def set_seed(args):
     random.seed(args.seed)
-    np.random.seed(aargs.seed)
+    np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     if args.n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
 
 def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')):
-    """ Filter a distribution of logits using top-k and/or nucleus (top-p) filtering
-        Args:
-            logits: logits distribution shape (vocabulary size)
-            top_k > 0: keep only top k tokens with highest probability (top-k filtering).
-            top_p > 0.0: keep the top tokens with cumulative probability >= top_p (nucleus filtering).
-                Nucleus filtering is described in Holtzman et al. (http://arxiv.org/abs/1904.09751)
-        From: https://gist.github.com/thomwolf/1a5a29f6962089e871b94cbd09daf317
-    """
+    # """ Filter a distribution of logits using top-k and/or nucleus (top-p) filtering
+    #     Args:
+    #         logits: logits distribution shape (vocabulary size)
+    #         top_k > 0: keep only top k tokens with highest probability (top-k filtering).
+    #         top_p > 0.0: keep the top tokens with cumulative probability >= top_p (nucleus filtering).
+    #             Nucleus filtering is described in Holtzman et al. (http://arxiv.org/abs/1904.09751)
+    #     From: https://gist.github.com/thomwolf/1a5a29f6962089e871b94cbd09daf317
+    # """
     assert logits.dim() == 1  # batch size 1 for now - could be updated for more but the code would be less clear
     top_k = min(top_k, logits.size(-1))  # Safety check
     if top_k > 0:
@@ -57,16 +57,17 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
 
 
 def sample_seq(model, context, length, device, temperature=1, top_k=0, top_p=0.0):
-	""" Generates a sequence of tokens 
-		Args:
-			model: gpt/gpt2 model
-			context: tokenized text using gpt/gpt2 tokenizer
-			length: length of generated sequence.
-			device: torch.device object.
-			temperature >0: used to control the randomness of predictions by scaling the logits before applying softmax.
-			top_k > 0: keep only top k tokens with highest probability (top-k filtering).
-			top_p > 0.0: keep the top tokens with cumulative probability >= top_p (nucleus filtering).
-	"""
+# 	""" 
+#     Generates a sequence of tokens 
+# 		Args:
+# 			model: gpt/gpt2 model
+# 			context: tokenized text using gpt/gpt2 tokenizer
+# 			length: length of generated sequence.
+# 			device: torch.device object.
+# 			temperature >0: used to control the randomness of predictions by scaling the logits before applying softmax.
+# 			top_k > 0: keep only top k tokens with highest probability (top-k filtering).
+# 			top_p > 0.0: keep the top tokens with cumulative probability >= top_p (nucleus filtering).
+# 	"""
     context = torch.tensor(context, dtype=torch.long, device=device)
     context = context.unsqueeze(0)
     generated = context
@@ -82,15 +83,15 @@ def sample_seq(model, context, length, device, temperature=1, top_k=0, top_p=0.0
 
 
 def beam_search(model, context, length, beam_size, device, temperature=1):
-	""" Generate sequence using beam search https://machinelearningmastery.com/beam-search-decoder-natural-language-processing/
-		Args:
-			model: gpt/gpt2 model
-			context: tokenized text using gpt/gpt2 tokenizer
-			length: length of generated sequence.
-			beam_size: >=1 and <= total_no_of_tokens
-			device: torch.device object.
-			temperature >0: used to control the randomness of predictions by scaling the logits before applying softmax.
-	"""
+# 	""" Generate sequence using beam search https://machinelearningmastery.com/beam-search-decoder-natural-language-processing/
+# 		Args:
+# 			model: gpt/gpt2 model
+# 			context: tokenized text using gpt/gpt2 tokenizer
+# 			length: length of generated sequence.
+# 			beam_size: >=1 and <= total_no_of_tokens
+# 			device: torch.device object.
+# 			temperature >0: used to control the randomness of predictions by scaling the logits before applying softmax.
+# 	"""
     context = torch.tensor(context, dtype=torch.long, device=device)
     context = context.unsqueeze(0)
     with torch.no_grad():  
@@ -119,12 +120,12 @@ def beam_search(model, context, length, beam_size, device, temperature=1):
 
 
 def generate_beam_sample(data, tokenizer, num=1, length=100, beam_size=3, device=torch.device('cuda')):
-	""" Generate summaries for "num" number of articles using beam search.
-		Args:
-			data = GPT21024Dataset object
-			tokenizer = gpt/gpt2 tokenizer
-			num = number of articles for which summaries has to be generated
-	"""
+# 	""" Generate summaries for "num" number of articles using beam search.
+# 		Args:
+# 			data = GPT21024Dataset object
+# 			tokenizer = gpt/gpt2 tokenizer
+# 			num = number of articles for which summaries has to be generated
+# 	"""
     for i in range(num):
         sample = data[i]
         idx = sample['sum_idx']
@@ -142,30 +143,31 @@ def generate_beam_sample(data, tokenizer, num=1, length=100, beam_size=3, device
             print(text, end='\n\n')
 
 
-def generate_sample(data, tokenizer, num=1, eval_step=False, length=100, temperature=1, top_k=10, top_p=0.5, device=torch.device('cuda')):
-	""" Generate summaries for "num" number of articles.
-		Args:
-			data = GPT21024Dataset object
-			tokenizer = gpt/gpt2 tokenizer
-			num = number of articles for which summaries has to be generated
-			eval_step = can be True/False, checks generating during evaluation or not
-	"""
-	for i in range(num):
-	    sample = data[i]
-	    idx = sample['sum_idx']
-	    context = sample['article'][:idx].tolist()
-	    summary = sample['article'][idx+1:][:100].tolist()
-	    generated_text = sample_seq(model, context, length, device, temperature, top_k, top_p)
-	    generated_text = generated_text[0, len(context):].tolist()
-	    text = tokenizer.convert_ids_to_tokens(generated_text,skip_special_tokens=True)
-	    text = tokenizer.convert_tokens_to_string(text)
-	    if eval_step==False:
-		    print('new_article', end='\n\n')
-		    print(tokenizer.decode(context), end='\n\n')
-		    print("generated_summary", end='\n\n')
-		    print(text, end='\n\n')
-		    print('actual_summary', end='\n\n')
-		    print(tokenizer.decode(summary), end='\n\n')
-		else:
-			print(tokenizer.decode(context), end='\n\n')
-		    print("generated_summary", end='\n\n')
+def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=100, temperature=1, top_k=10, top_p=0.5, device=torch.device('cuda')):
+# 	""" Generate summaries for "num" number of articles.
+# 		Args:
+# 			data = GPT21024Dataset object
+# 			tokenizer = gpt/gpt2 tokenizer
+# 			num = number of articles for which summaries has to be generated
+# 			eval_step = can be True/False, checks generating during evaluation or not
+# 	"""
+    for i in range(num):
+        sample = data[i]
+        idx = sample['sum_idx']
+        model=model
+        context = sample['article'][:idx].tolist()
+        summary = sample['article'][idx+1:][:100].tolist()
+        generated_text = sample_seq(model, context, length, device, temperature, top_k, top_p)
+        generated_text = generated_text[0, len(context):].tolist()
+        text = tokenizer.convert_ids_to_tokens(generated_text,skip_special_tokens=True)
+        text = tokenizer.convert_tokens_to_string(text)
+        if eval_step==False:
+            print('new_article', end='\n\n')
+            print(tokenizer.decode(context), end='\n\n')
+            print("generated_summary", end='\n\n')
+            print(text, end='\n\n')
+            print('actual_summary', end='\n\n')
+            print(tokenizer.decode(summary), end='\n\n')
+        else:
+            print(tokenizer.decode(context), end='\n\n')
+            print("generated_summary", end='\n\n')
