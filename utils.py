@@ -7,6 +7,8 @@ import time
 
 import numpy as np
 from pytorch_transformers import GPT2Tokenizer
+from tqdm import tnrange
+import torch.nn.functional as F
 import torch
 
 
