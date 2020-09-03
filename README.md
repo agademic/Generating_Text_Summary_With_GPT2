@@ -17,6 +17,9 @@ Use pretrained weights to finetune the GPT2 model using tricks mentioned in [Gen
 $ python train_gpt2_summarizer.py --batch_size 1 --root_dir path/to/json/files/created/using/prepare_data.py
 ```
 
+### Training on Colab
+Deploy train_gpt2_summarizer_for_colab.ipynb on Colab to play around with training configurations.
+
 ## Credit
 
 ### [Sample Efficient Text Summarization Using a Single Pre-Trained Transformer](https://arxiv.org/abs/1905.08836)
